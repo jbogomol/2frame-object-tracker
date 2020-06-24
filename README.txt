@@ -87,8 +87,7 @@ all packages:
 
 dataset:
     flickr30k, or any other set of >= 20,000 color (rgb 3-channel) jpg images
-
-
+    https://www.kaggle.com/hsankesara/flickr-image-dataset
 
 
 
