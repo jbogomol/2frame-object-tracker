@@ -26,10 +26,12 @@ import pandas as pd
 
 # directory with raw image data (must have >= 20k jpg images)
 # all images should be same size for nn
-imdir = './flickr30k/resized'
+# imdir = './flickr30k/resized'
+imdir = '/home/datasets/data_jbogomol/flickr30k/resized'
 
 # directory to store results in
-resultsdir = './flickr30k/results'
+# resultsdir = './flickr30k/results'
+resultsdir = '/home/datasets/data_jbogomol/flickr30k/results'
 
 # size of square "object" to cut from fg and paste in bg
 objsize = 128

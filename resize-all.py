@@ -11,10 +11,12 @@ import cv2
 
 
 # directory with images
-imdir = './flickr30k/flickr30k_images'
+# imdir = './flickr30k/flickr30k_images'
+imdir = '/home/datasets/data_jbogomol/flickr30k/flickr30k_images'
 
 # directory for results
-resultsdir = './flickr30k/resized'
+# resultsdir = './flickr30k/resized'
+resultsdir = '/home/datasets/data_jbogomol/flickr30k/resized'
 
 # size of results
 resultssize = 256

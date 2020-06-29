@@ -23,7 +23,8 @@ import sys
 
 
 # directory with images and results.csv
-resultsdir = './flickr30k/results'
+# resultsdir = './flickr30k/results'
+resultsdir = '/home/datasets/data_jbogomol/flickr30k/results'
 
 # csv path
 csvpath = os.path.join(resultsdir, 'results.csv')
