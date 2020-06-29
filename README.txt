@@ -87,7 +87,7 @@ all packages:
 
 dataset:
     flickr30k, or any other set of >= 20,000 color (rgb 3-channel) jpg images
-    download: https://www.kaggle.com/hsankesara/flickr-image-dataset
+    http://shannon.cs.illinois.edu/DenotationGraph/data/flickr30k-images.tar
 
 
 
