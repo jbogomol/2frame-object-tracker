@@ -73,7 +73,7 @@ batch_size_validation = 1000
 batch_size_test = 1000
 learning_rate = 0.001
 momentum = 0.9
-log_interval = 125 # print every log_interval mini batches
+log_interval = 9999999 # print every log_interval mini batches
 
 # keep same random seed for replicable results
 random_seed = 1
