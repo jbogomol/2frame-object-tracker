@@ -20,18 +20,26 @@
 
 import os
 import cv2
+import torch
 import random
 import pandas as pd
 
 
+# on server or local computer
+on_server = torch.cuda.is_available()
+
 # directory with raw image data (must have >= 20k jpg images)
 # all images should be same size for nn
-# imdir = './flickr30k/resized'
-imdir = '/home/datasets/data_jbogomol/flickr30k/resized'
+if on_server:
+    imdir = '/home/datasets/data_jbogomol/flickr30k/resized'
+else:
+    imdir = './flickr30k/resized'
 
 # directory to store results in
-# resultsdir = './flickr30k/results'
-resultsdir = '/home/datasets/data_jbogomol/flickr30k/results'
+if on_server:
+    resultsdir = '/home/datasets/data_jbogomol/flickr30k/results'
+else:
+    resultsdir = './flickr30k/results'
 
 # size of square "object" to cut from fg and paste in bg
 objsize = 128
@@ -137,6 +145,8 @@ for i in range(10000):
               + path_trans + ','
               + str(vx) + ','
               + str(vy) +'\n')
+
+    print(i)
 
     # display images if display global is set
     if display:

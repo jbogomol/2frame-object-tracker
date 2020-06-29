@@ -22,12 +22,20 @@ import cv2
 import sys
 
 
+# on server or local computer
+on_server = torch.cuda.is_available()
+
 # directory with images and results.csv
-# resultsdir = './flickr30k/results'
-resultsdir = '/home/datasets/data_jbogomol/flickr30k/results'
+if on_server:
+    resultsdir = '/home/datasets/data_jbogomol/flickr30k/results'
+else:
+    resultsdir = './flickr30k/results'
 
 # csv path
 csvpath = os.path.join(resultsdir, 'results.csv')
+
+# which gpu
+torch.cuda.set_device(2)
 
 
 # dataset class
@@ -70,8 +78,8 @@ class TwoFrameTrackingDataset(torch.utils.data.Dataset):
 # network hyperparameters
 n_epochs = 50
 batch_size_train = 64
-batch_size_validation = 1000
-batch_size_test = 1000
+batch_size_validation = 256
+batch_size_test = 256
 learning_rate = 0.001
 momentum = 0.9
 log_interval = 9999999 # print every log_interval mini batches
@@ -167,6 +175,8 @@ class Network(nn.Module):
         return t
 
 network = Network()
+if on_server:
+    network = network.cuda()
 print('network:', network)
 
 optimizer = optim.SGD(network.parameters(), lr=learning_rate, momentum=momentum)
@@ -180,6 +190,9 @@ for epoch in range(n_epochs):
     for i, batch in enumerate(trainloader, 0):
         # get inputs and labels
         inputs, labels = batch
+        if on_server:
+            inputs = inputs.cuda()
+            labels = labels.cuda()
 
         # reformat labels
         labels = labels + 10
@@ -218,13 +231,16 @@ for epoch in range(n_epochs):
         for batch in validationloader:
             # should only be one batch
             images, labels = batch
+            if on_server:
+                images = images.cuda()
+                labels = labels.cuda()
             outputs = network(images)
             preds = outputs.argmax(dim=2) # i think this is correct?
-            labels = labels + 10
-            correct = labels.eq(preds).sum().item()
+            labels += 10
+            correct += labels.eq(preds).sum().item()
             off_by_one_pos = labels.eq(preds + 1).sum().item()
             off_by_one_neg = labels.eq(preds - 1).sum().item()
-            off_by_one = off_by_one_pos + off_by_one_neg
+            off_by_one += off_by_one_pos + off_by_one_neg
     print('# correct:  ' + str(correct) + '/' + str(total) + ' = '
           + str(100.0*correct/total) + '%')
     print('# off by 1: ' + str(off_by_one) + '/' + str(total) + ' = '

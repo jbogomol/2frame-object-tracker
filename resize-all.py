@@ -8,15 +8,23 @@
 
 import os
 import cv2
+import torch
 
+
+# on server or local computer
+on_server = torch.cuda.is_available()
 
 # directory with images
-# imdir = './flickr30k/flickr30k_images'
-imdir = '/home/datasets/data_jbogomol/flickr30k/flickr30k_images'
+if on_server:
+    imdir = '/home/datasets/data_jbogomol/flickr30k/flickr30k_images'
+else:    
+    imdir = './flickr30k/flickr30k_images'
 
 # directory for results
-# resultsdir = './flickr30k/resized'
-resultsdir = '/home/datasets/data_jbogomol/flickr30k/resized'
+if on_server:
+    resultsdir = '/home/datasets/data_jbogomol/flickr30k/resized'
+else:
+    resultsdir = './flickr30k/resized'
 
 # size of results
 resultssize = 256
@@ -28,10 +36,11 @@ for filename in os.listdir(resultsdir):
 
 
 # loop through imdir and crop all files to 256
-for filename in os.listdir(imdir):
+for num, filename in enumerate(os.listdir(imdir)):
     if filename.endswith('.jpg'):
         filepath = os.path.join(imdir, filename)
         img = cv2.imread(filepath, -1)
         imgnew = cv2.resize(img, (resultssize, resultssize))
         filenamenew = str(resultssize) + '_' + filename
         cv2.imwrite(os.path.join(resultsdir, filenamenew), imgnew)
+        print(num, filenamenew)

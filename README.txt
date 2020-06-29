@@ -87,9 +87,7 @@ all packages:
 
 dataset:
     Flickr30k
-    
-    http://shannon.cs.illinois.edu/DenotationGraph/data/flickr30k-images.tar
-    
+    http://shannon.cs.illinois.edu/DenotationGraph/data/index.html
     P. Young, A. Lai, M. Hodosh, and J. Hockenmaier. From image
     description to visual denotations: New similarity metrics for semantic
     inference over event descriptions. Transactions of the Association for
