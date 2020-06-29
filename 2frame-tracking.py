@@ -35,7 +35,8 @@ else:
 csvpath = os.path.join(resultsdir, 'results.csv')
 
 # which gpu
-torch.cuda.set_device(2)
+if on_server:
+    torch.cuda.set_device(2)
 
 
 # dataset class
