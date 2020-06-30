@@ -39,28 +39,37 @@ Network architecture:
   - 3 fully-connected layers with the following specs:
         1. size 120, relu
         2. size 60,  relu
-        3. size 42,  relu (output layer)
+        3. size 42,  relu (output layer) - 2frame_tracking_classifier.py
            output is read by reshaping this layer to
            torch.Size([<batch_size>, 2, 21]), where the 2 axes of length 21
            represent the probabilities of vx=<index> and vy=<index>
            (i.e. the argmax of the output layer is the one-hot encoded
            prediction of the object's offset vector v).
+           -OR-
+           size 2 (output layer) - 2frame_tracking_regression.py
+           where the first number is the predicted vx,
+           and the second number is the predicted vy
 
 
 
 ~ HOW TO RUN ~
 
-1. resize-all.py
+1. resize_all.py
     Takes images from source directory, resizes them to a given
     size, and saves the results in a specified results directory.
-2. create-images.py
+2. create_images.py
     Takes resized images and creates a results directory containing
     10,000 2-frame pairs (20,000 jpg images) and a results.csv file
     containing paths to the images and their corresponding offset vector's
     components, vx and vy.
-3. 2frame-tracking.py
+3. 2frame_tracking_classifier.py
     Creates pytorch dataset and dataloader, trains the network, and reports
     the network's progress on validation data to the command line.
+    Formulated as a classification problem, trained with a cross-entropy loss.
+   -OR-
+   2frame_tracking_regression.py
+    Formulated as a regression problem, trained with a regression loss
+    function.
 
 For all
     Change global vars to correct filepaths, image sizes, etc.
@@ -81,6 +90,8 @@ all packages:
     pandas (0.24.2)
     cv2 (4.2.0)
     numpy (1.16.2)
+    matplotlib (3.1.3)
+    seaborn (0.10.0)
     os
     sys
     random

@@ -1,9 +1,9 @@
-# resize-all.py
+# resize_all.py
 #
 # @author       Jackson Bogomolny <jbogomol@andrew.cmu.edu>
 # @date         06/11/2020
 #
-# resizes all images in a specified directory to a specified size
+# Resizes all images in a specified directory to a specified size
 
 
 import os

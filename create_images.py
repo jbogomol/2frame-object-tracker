@@ -1,20 +1,20 @@
-# create-images.py
+# create_images.py
 #
 # @author       Jackson Bogomolny <jbogomol@andrew.cmu.edu>
 # @date         06/09/2020
 #
-# make 20k images from source imdir
+# Make 20k images from source imdir
 # - 10k have fg placed in center of bg
 # - 10k have fg displaced by random vector <vx, vy> where
 #       vx and vy random ints in range [-maxtrans, maxtrans]
 # 
-# store resulting images in resultsdir
+# Store resulting images in resultsdir
 #       as 0c.jpg 0t.jpg ... 9999c.jpg 9999t.jpg
-# store ground truths in resultsdir/results.csv file
+# Store ground truths in resultsdir/results.csv file
 #       with following columns: img_center,img_trans,vx,vy
 #
-# before running this, it is recommended to run:
-#      resize-all.py
+# Before running this, it is recommended to run:
+#      resize_all.py
 #      which will resize all images to the same size
 
 

@@ -1,13 +1,14 @@
-# 2frame-tracking.py
+# 2frame_tracking_classifier.py
 #
 # @author       Jackson Bogomolny <jbogomol@andrew.cmu.edu>
 # @date         06/10/2020
 #
-# trains a convolutional network to guess frame-to-frame object motion
-# from -10 to 10 pixels in x or y direction
+# Trains a convolutional network to guess frame-to-frame object motion
+# from -10 to 10 pixels in x or y direction.
+# Formulated as a classification problem with a cross-entropy loss function.
 #
-# before running, run create-images.py to create necessary images from
-# data as well as csv file containing ground truths
+# Before running, run create_images.py to create necessary images from
+# data as well as results.csv file containing ground truths
 
 
 import torch
@@ -17,6 +18,8 @@ import torch.optim as optim
 import torchvision
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sb
 import os
 import cv2
 import sys
@@ -85,7 +88,7 @@ class TwoFrameTrackingDataset(torch.utils.data.Dataset):
 n_epochs = 50
 batch_size_train = 64
 batch_size_validation = 256
-batch_size_test = 256
+batch_size_test = 250
 learning_rate = 0.001
 momentum = 0.9
 log_interval = 9999999 # print every log_interval mini batches
@@ -121,7 +124,7 @@ trainloader = torch.utils.data.DataLoader(
 validationloader = torch.utils.data.DataLoader(
     validationset, batch_size=batch_size_validation, shuffle=True)
 testloader = torch.utils.data.DataLoader(
-    testset, batch_size=batch_size_train, shuffle=True)
+    testset, batch_size=batch_size_test, shuffle=True)
 
 # check the shapes
 dataiter = iter(trainloader)
@@ -267,31 +270,42 @@ else:
         torch.load(netpath, map_location=torch.device('cpu')))
 
 
+# test the trained network on test set (new data)
 print('Testing network on test set')
 correct = 0
-off_by_one = 0
 total = n_test * 2
+heatmap = []
 with torch.no_grad():
     for batch in testloader:
-        # should only be one batch
         images, labels = batch
         if on_server:
             images = images.cuda()
             labels = labels.cuda()
         outputs = network(images)
-        preds = outputs.argmax(dim=2) # i think this is correct?
+        preds = outputs.argmax(dim=2)
         labels += 10
         correct += labels.eq(preds).sum().item()
-        off_by_one_pos = labels.eq(preds + 1).sum().item()
-        off_by_one_neg = labels.eq(preds - 1).sum().item()
-        off_by_one += off_by_one_pos + off_by_one_neg
+        x_diff = preds[:,0] - labels[:,0]
+        y_diff = preds[:,1] - labels[:,1]
+        for i in range(batch_size_test):
+            heatmap.append([x_diff[i].item(), y_diff[i].item()])
+
 print('# correct:  ' + str(correct) + '/' + str(total) + ' = '
       + str(100.0*correct/total) + '%')
-print('# off by 1: ' + str(off_by_one) + '/' + str(total) + ' = '
-      + str(100.0*off_by_one/total) + '%')
 
-
-
+# show heat map on testing data
+heatmap = np.array(heatmap)
+columns = ['X diff (prediction - label)', 'Y diff (prediction - label)']
+heatmap_df = pd.DataFrame(data=heatmap, columns=columns)
+plt.figure()
+plt.title('Heat map, trained with cross-entropy loss')
+heatmap_plot = sb.jointplot(
+        x='X diff (prediction - label)',
+        y='Y diff (prediction - label)',
+        data=heatmap_df,
+        kind='scatter'
+    )
+plt.savefig('./heatmap_cross_entropy')
 
 
 
