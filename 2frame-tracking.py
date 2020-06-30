@@ -259,7 +259,13 @@ if training_on:
 
 
 # load network
-network.load_state_dict(torch.load(netpath))
+if on_server:
+    network.load_state_dict(
+        torch.load(netpath, map_location=torch.device('cuda')))
+else:
+    network.load_state_dict(
+        torch.load(netpath, map_location=torch.device('cpu')))
+
 
 print('Testing network on test set')
 correct = 0
