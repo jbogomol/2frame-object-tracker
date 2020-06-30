@@ -22,6 +22,9 @@ import cv2
 import sys
 
 
+# train or not
+training_on = False
+
 # on server or local computer
 on_server = torch.cuda.is_available()
 
@@ -33,6 +36,8 @@ else:
 
 # csv path
 csvpath = os.path.join(resultsdir, 'results.csv')
+
+netpath = './2frame_net.pth'
 
 # which gpu
 if on_server:
@@ -182,73 +187,102 @@ print('network:', network)
 
 optimizer = optim.SGD(network.parameters(), lr=learning_rate, momentum=momentum)
 
+if training_on:
+    # training loop
+    print('Begin training loop')
 
-# training loop
-print('Begin training loop')
-
-for epoch in range(n_epochs):
-    running_loss = 0.0
-    for i, batch in enumerate(trainloader, 0):
-        # get inputs and labels
-        inputs, labels = batch
-        if on_server:
-            inputs = inputs.cuda()
-            labels = labels.cuda()
-
-        # reformat labels
-        labels = labels + 10
-        # labels = F.one_hot(labels)
-        labels_x = labels[:,0]
-        labels_y = labels[:,1]
-
-        # zero the gradients
-        optimizer.zero_grad()
-
-        # forward, backward, optimize
-        outputs = network(inputs)
-        outputs_x = outputs[:,0,:]
-        outputs_y = outputs[:,1,:]
-        loss_x = F.cross_entropy(outputs_x, labels_x)
-        loss_y = F.cross_entropy(outputs_y, labels_y)
-        loss = loss_x + loss_y
-        loss.backward()
-        optimizer.step()
-
-        # print stats
-        running_loss += loss.item()
-        if i % log_interval == (log_interval - 1):
-            print('epoch %d,\tbatch %5d,\ttraining loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss / log_interval))
-            running_loss = 0.0
-
-    print('end of epoch '+ str(epoch + 1))
-    
-    # test on validation set
-    print('testing on validation set:')
-    correct = 0
-    off_by_one = 0
-    total = n_validation * 2
-    with torch.no_grad():
-        for batch in validationloader:
-            # should only be one batch
-            images, labels = batch
+    for epoch in range(n_epochs):
+        running_loss = 0.0
+        for i, batch in enumerate(trainloader, 0):
+            # get inputs and labels
+            inputs, labels = batch
             if on_server:
-                images = images.cuda()
+                inputs = inputs.cuda()
                 labels = labels.cuda()
-            outputs = network(images)
-            preds = outputs.argmax(dim=2) # i think this is correct?
-            labels += 10
-            correct += labels.eq(preds).sum().item()
-            off_by_one_pos = labels.eq(preds + 1).sum().item()
-            off_by_one_neg = labels.eq(preds - 1).sum().item()
-            off_by_one += off_by_one_pos + off_by_one_neg
-    print('# correct:  ' + str(correct) + '/' + str(total) + ' = '
-          + str(100.0*correct/total) + '%')
-    print('# off by 1: ' + str(off_by_one) + '/' + str(total) + ' = '
-          + str(100.0*off_by_one/total) + '%')
 
-print('Finished training')
+            # reformat labels
+            labels = labels + 10
+            # labels = F.one_hot(labels)
+            labels_x = labels[:,0]
+            labels_y = labels[:,1]
 
+            # zero the gradients
+            optimizer.zero_grad()
+
+            # forward, backward, optimize
+            outputs = network(inputs)
+            outputs_x = outputs[:,0,:]
+            outputs_y = outputs[:,1,:]
+            loss_x = F.cross_entropy(outputs_x, labels_x)
+            loss_y = F.cross_entropy(outputs_y, labels_y)
+            loss = loss_x + loss_y
+            loss.backward()
+            optimizer.step()
+
+            # print stats
+            running_loss += loss.item()
+            if i % log_interval == (log_interval - 1):
+                print('epoch %d,\tbatch %5d,\ttraining loss: %.3f' %
+                      (epoch + 1, i + 1, running_loss / log_interval))
+                running_loss = 0.0
+
+        print('end of epoch '+ str(epoch + 1))
+    
+        # test on validation set
+        print('testing on validation set:')
+        correct = 0
+        off_by_one = 0
+        total = n_validation * 2
+        with torch.no_grad():
+            for batch in validationloader:
+                # should only be one batch
+                images, labels = batch
+                if on_server:
+                    images = images.cuda()
+                    labels = labels.cuda()
+                outputs = network(images)
+                preds = outputs.argmax(dim=2) # i think this is correct?
+                labels += 10
+                correct += labels.eq(preds).sum().item()
+                off_by_one_pos = labels.eq(preds + 1).sum().item()
+                off_by_one_neg = labels.eq(preds - 1).sum().item()
+                off_by_one += off_by_one_pos + off_by_one_neg
+        print('# correct:  ' + str(correct) + '/' + str(total) + ' = '
+              + str(100.0*correct/total) + '%')
+        print('# off by 1: ' + str(off_by_one) + '/' + str(total) + ' = '
+              + str(100.0*off_by_one/total) + '%')
+
+    print('Finished training')
+    
+    # save network
+    torch.save(network.state_dict(), netpath)
+
+
+# load network
+network.load_state_dict(torch.load(netpath))
+
+print('Testing network on test set')
+correct = 0
+off_by_one = 0
+total = n_test * 2
+with torch.no_grad():
+    for batch in testloader:
+        # should only be one batch
+        images, labels = batch
+        if on_server:
+            images = images.cuda()
+            labels = labels.cuda()
+        outputs = network(images)
+        preds = outputs.argmax(dim=2) # i think this is correct?
+        labels += 10
+        correct += labels.eq(preds).sum().item()
+        off_by_one_pos = labels.eq(preds + 1).sum().item()
+        off_by_one_neg = labels.eq(preds - 1).sum().item()
+        off_by_one += off_by_one_pos + off_by_one_neg
+print('# correct:  ' + str(correct) + '/' + str(total) + ' = '
+      + str(100.0*correct/total) + '%')
+print('# off by 1: ' + str(off_by_one) + '/' + str(total) + ' = '
+      + str(100.0*off_by_one/total) + '%')
 
 
 
