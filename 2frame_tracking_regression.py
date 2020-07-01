@@ -1,11 +1,11 @@
 # 2frame_tracking_classifier.py
 #
 # @author       Jackson Bogomolny <jbogomol@andrew.cmu.edu>
-# @date         06/10/2020
+# @date         07/01/2020
 #
 # Trains a convolutional network to guess frame-to-frame object motion
 # from -10 to 10 pixels in x or y direction.
-# Formulated as a classification problem with a cross-entropy loss function.
+# Formulated as a regression problem with a mean squared error loss function.
 #
 # Before running, run create_images.py to create necessary images from
 # data as well as results.csv file containing ground truths
@@ -27,7 +27,7 @@ import random
 
 
 # train or not
-training_on = False
+training_on = True
 
 # on server or local computer
 on_server = torch.cuda.is_available()
@@ -39,7 +39,7 @@ else:
     resultsdir = './flickr30k/results'
 
 # directory to store saves
-reportdir = './report_classifier/'
+reportdir = './report_regression/'
 
 # csv path
 csvpath = os.path.join(resultsdir, 'results.csv')
@@ -96,7 +96,7 @@ batch_size_validation = 256
 batch_size_test = 1
 learning_rate = 0.001
 momentum = 0.9
-log_interval = 9999999 # print every log_interval mini batches
+log_interval = 999999 # print every log_interval mini batches
 
 # keep same random seed for replicable results
 random_seed = 1
@@ -154,7 +154,7 @@ class Network(nn.Module):
         self.conv3_bn = nn.BatchNorm2d(num_features=64)
         self.fc1 = nn.Linear(in_features=64*31*31, out_features=120)
         self.fc2 = nn.Linear(in_features=120, out_features=60)
-        self.out = nn.Linear(in_features=60, out_features=42)
+        self.out = nn.Linear(in_features=60, out_features=2)
 
     def forward(self, t):
         # (1) convolutional layer
@@ -185,7 +185,6 @@ class Network(nn.Module):
 
         # (5) output layer
         t = self.out(t)
-        t = t.reshape(-1, 2, 21)
         return t
 
 network = Network()
@@ -207,22 +206,20 @@ if training_on:
             if on_server:
                 inputs = inputs.cuda()
                 labels = labels.cuda()
-
+            
             # reformat labels
-            labels = labels + 10
-            # labels = F.one_hot(labels)
-            labels_x = labels[:,0]
-            labels_y = labels[:,1]
+            labels_x = labels[:,0].float()
+            labels_y = labels[:,1].float()
 
             # zero the gradients
             optimizer.zero_grad()
 
             # forward, backward, optimize
             outputs = network(inputs)
-            outputs_x = outputs[:,0,:]
-            outputs_y = outputs[:,1,:]
-            loss_x = F.cross_entropy(outputs_x, labels_x)
-            loss_y = F.cross_entropy(outputs_y, labels_y)
+            outputs_x = outputs[:,0]
+            outputs_y = outputs[:,1]
+            loss_x = F.mse_loss(outputs_x, labels_x)
+            loss_y = F.mse_loss(outputs_y, labels_y)
             loss = loss_x + loss_y
             loss.backward()
             optimizer.step()
