@@ -246,7 +246,7 @@ if training_on:
                     images = images.cuda()
                     labels = labels.cuda()
                 outputs = network(images)
-                preds = outputs.int()
+                preds = outputs.round().int()
                 correct += labels.eq(preds).sum().item()
                 off_by_one_pos = labels.eq(preds + 1).sum().item()
                 off_by_one_neg = labels.eq(preds - 1).sum().item()
@@ -289,7 +289,7 @@ with torch.no_grad():
             images = images.cuda()
             labels = labels.cuda()
         outputs = network(images)
-        preds = outputs.int()
+        preds = outputs.round().int()
         correct += labels.eq(preds).sum().item()
         x_diff = preds[:,0] - labels[:,0]
         y_diff = preds[:,1] - labels[:,1]
