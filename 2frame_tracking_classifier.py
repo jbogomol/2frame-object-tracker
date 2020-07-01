@@ -49,7 +49,7 @@ netpath = os.path.join(reportdir, '2frame_net.pth')
 
 # which gpu
 if on_server:
-    torch.cuda.set_device(2)
+    torch.cuda.set_device(0)
 
 
 # dataset class
@@ -351,7 +351,7 @@ heatmap_plot = sb.jointplot(
         data=heatmap_df,
         kind='scatter'
     )
-plt.savefig(os.path.join(reportdir, 'heatmap_cross_entropy.png'))
+plt.savefig(os.path.join(reportdir, 'heatmap_classifier.png'))
 
 
 

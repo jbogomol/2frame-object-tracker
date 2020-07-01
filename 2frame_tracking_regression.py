@@ -27,7 +27,7 @@ import random
 
 
 # train or not
-training_on = True
+training_on = False
 
 # on server or local computer
 on_server = torch.cuda.is_available()
@@ -49,7 +49,7 @@ netpath = os.path.join(reportdir, '2frame_net.pth')
 
 # which gpu
 if on_server:
-    torch.cuda.set_device(2)
+    torch.cuda.set_device(0)
 
 
 # dataset class
@@ -94,9 +94,9 @@ n_epochs = 50
 batch_size_train = 64
 batch_size_validation = 256
 batch_size_test = 1
-learning_rate = 0.001
+learning_rate = 0.0001 # 0.001 for classifier
 momentum = 0.9
-log_interval = 999999 # print every log_interval mini batches
+log_interval = 10 # print every log_interval mini batches
 
 # keep same random seed for replicable results
 random_seed = 1
@@ -246,8 +246,7 @@ if training_on:
                     images = images.cuda()
                     labels = labels.cuda()
                 outputs = network(images)
-                preds = outputs.argmax(dim=2) # i think this is correct?
-                labels += 10
+                preds = outputs.int()
                 correct += labels.eq(preds).sum().item()
                 off_by_one_pos = labels.eq(preds + 1).sum().item()
                 off_by_one_neg = labels.eq(preds - 1).sum().item()
@@ -290,8 +289,7 @@ with torch.no_grad():
             images = images.cuda()
             labels = labels.cuda()
         outputs = network(images)
-        preds = outputs.argmax(dim=2)
-        labels += 10
+        preds = outputs.int()
         correct += labels.eq(preds).sum().item()
         x_diff = preds[:,0] - labels[:,0]
         y_diff = preds[:,1] - labels[:,1]
@@ -341,14 +339,14 @@ heatmap = np.array(heatmap)
 columns = ['X diff (prediction - label)', 'Y diff (prediction - label)']
 heatmap_df = pd.DataFrame(data=heatmap, columns=columns)
 plt.figure()
-plt.title('Heat map, trained with cross-entropy loss')
+plt.title('Heat map, trained with mean squared error loss')
 heatmap_plot = sb.jointplot(
         x='X diff (prediction - label)',
         y='Y diff (prediction - label)',
         data=heatmap_df,
         kind='scatter'
     )
-plt.savefig(os.path.join(reportdir, 'heatmap_cross_entropy.png'))
+plt.savefig(os.path.join(reportdir, 'heatmap_regression.png'))
 
 
 
