@@ -23,6 +23,7 @@ import seaborn as sb
 import os
 import cv2
 import sys
+import random
 
 
 # train or not
@@ -37,9 +38,13 @@ if on_server:
 else:
     resultsdir = './flickr30k/results'
 
+# directory to store error images
+errdir = './errors_classifier/'
+
 # csv path
 csvpath = os.path.join(resultsdir, 'results.csv')
 
+# network to save (if training) or load (if not training)
 netpath = './2frame_net.pth'
 
 # which gpu
@@ -88,7 +93,7 @@ class TwoFrameTrackingDataset(torch.utils.data.Dataset):
 n_epochs = 50
 batch_size_train = 64
 batch_size_validation = 256
-batch_size_test = 250
+batch_size_test = 1
 learning_rate = 0.001
 momentum = 0.9
 log_interval = 9999999 # print every log_interval mini batches
@@ -273,8 +278,14 @@ else:
 # test the trained network on test set (new data)
 print('Testing network on test set')
 correct = 0
+errcount = 0
 total = n_test * 2
 heatmap = []
+
+# empty error directory to fill with new errors
+for filename in os.listdir(errdir):
+    os.remove(os.path.join(errdir, filename))
+
 with torch.no_grad():
     for batch in testloader:
         images, labels = batch
@@ -289,9 +300,42 @@ with torch.no_grad():
         y_diff = preds[:,1] - labels[:,1]
         for i in range(batch_size_test):
             heatmap.append([x_diff[i].item(), y_diff[i].item()])
+            
+            if x_diff[i].item() != 0 or y_diff[i].item() != 0:
+                # if vector v predicted incorrectly
+                # get actual and predicted vx,vy
+                pred = preds[i] - 10
+                label = labels[i] - 10
+                vxp = pred[0].item()
+                vyp = pred[1].item()
+                vx = label[0].item()
+                vy = label[1].item()
+                # save an image with bounding boxes
+                # actual in green, predicted in blue
+                img = images[0].numpy()
+                img_trans = img[3:,:,:]
+                img_trans = np.transpose(img_trans, (1, 2, 0))
+                img_trans = cv2.resize(img_trans, (256, 256))
+                img_rect = cv2.rectangle(
+                    img=img_trans,
+                    pt1=(64+vx, 64+vy),
+                    pt2=(64+128+vx, 64+128+vy),
+                    color=(0, 255, 0),
+                    thickness=1)
+                img_rect = cv2.rectangle(
+                    img=img_rect,
+                    pt1=(64+vxp, 64+vyp),
+                    pt2=(64+128+vxp, 64+128+vyp),
+                    color=(255, 0, 0),
+                    thickness=1)
+                imgname = 'err_' + str(errcount) + '.jpg'
+                cv2.imwrite(os.path.join(errdir, imgname), img_rect)
+                errcount += 1
 
 print('# correct:  ' + str(correct) + '/' + str(total) + ' = '
       + str(100.0*correct/total) + '%')
+print(str(errcount) + ' errors saved to ' + errdir)
+print('predicted box in blue, correct in green')
 
 # show heat map on testing data
 heatmap = np.array(heatmap)
