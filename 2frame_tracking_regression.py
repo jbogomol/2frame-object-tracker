@@ -27,7 +27,7 @@ import random
 
 
 # train or not
-training_on = False
+training_on = True
 
 # on server or local computer
 on_server = torch.cuda.is_available()
@@ -94,7 +94,7 @@ n_epochs = 50
 batch_size_train = 64
 batch_size_validation = 256
 batch_size_test = 1
-learning_rate = 0.0001 # 0.001 for classifier
+learning_rate = 0.001 # 0.001 for classifier
 momentum = 0.9
 log_interval = 10 # print every log_interval mini batches
 
@@ -247,6 +247,7 @@ if training_on:
                     labels = labels.cuda()
                 outputs = network(images)
                 preds = outputs.round().int()
+                labels = labels.int()
                 correct += labels.eq(preds).sum().item()
                 off_by_one_pos = labels.eq(preds + 1).sum().item()
                 off_by_one_neg = labels.eq(preds - 1).sum().item()
@@ -290,6 +291,16 @@ with torch.no_grad():
             labels = labels.cuda()
         outputs = network(images)
         preds = outputs.round().int()
+        labels = labels.int()
+
+        
+        # TODO here for debugging
+        '''nplabels = labels.cpu().numpy()
+        npoutputs = outputs.cpu().numpy()
+        npcorrect = labels.eq(preds).cpu().numpy()
+        print(np.stack([nplabels, npoutputs, npcorrect], axis=1))
+        '''
+
         correct += labels.eq(preds).sum().item()
         x_diff = preds[:,0] - labels[:,0]
         y_diff = preds[:,1] - labels[:,1]
