@@ -312,6 +312,7 @@ with torch.no_grad():
                 vy = label[1].item()
                 # save an image with bounding boxes
                 # actual in green, predicted in blue
+                images = images.cpu()
                 img = images[0].numpy()
                 img_trans = img[3:,:,:]
                 img_trans = np.transpose(img_trans, (1, 2, 0))
