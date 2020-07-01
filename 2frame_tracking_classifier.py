@@ -38,14 +38,14 @@ if on_server:
 else:
     resultsdir = './flickr30k/results'
 
-# directory to store error images
-errdir = './errors_classifier/'
+# directory to store saves
+reportdir = './report_classifier/'
 
 # csv path
 csvpath = os.path.join(resultsdir, 'results.csv')
 
 # network to save (if training) or load (if not training)
-netpath = './2frame_net.pth'
+netpath = reportdir + '2frame_net.pth'
 
 # which gpu
 if on_server:
@@ -283,8 +283,8 @@ total = n_test * 2
 heatmap = []
 
 # empty error directory to fill with new errors
-for filename in os.listdir(errdir):
-    os.remove(os.path.join(errdir, filename))
+for filename in os.listdir(reportdir + 'errors/'):
+    os.remove(os.path.join(reportdir + 'errors/', filename))
 
 with torch.no_grad():
     for batch in testloader:
@@ -329,12 +329,13 @@ with torch.no_grad():
                     color=(255, 0, 0),
                     thickness=1)
                 imgname = 'err_' + str(errcount) + '.jpg'
-                cv2.imwrite(os.path.join(errdir, imgname), img_rect)
+                cv2.imwrite(os.path.join(reportdir + 'errors/', imgname),
+                    img_rect)
                 errcount += 1
 
 print('# correct:  ' + str(correct) + '/' + str(total) + ' = '
       + str(100.0*correct/total) + '%')
-print(str(errcount) + ' errors saved to ' + errdir)
+print(str(errcount) + ' errors saved to ' + reportdir + 'errors/')
 print('predicted box in blue, correct in green')
 
 # show heat map on testing data
@@ -349,12 +350,7 @@ heatmap_plot = sb.jointplot(
         data=heatmap_df,
         kind='scatter'
     )
-plt.savefig('./heatmap_cross_entropy')
-
-
-
-
-
+plt.savefig(os.path.join(reportdir, 'heatmap_cross_entropy.png'))
 
 
 
