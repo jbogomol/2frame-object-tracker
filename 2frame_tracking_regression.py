@@ -27,7 +27,7 @@ import random
 
 
 # train or not
-training_on = True
+training_on = False
 
 # on server or local computer
 on_server = torch.cuda.is_available()
@@ -292,15 +292,6 @@ with torch.no_grad():
         outputs = network(images)
         preds = outputs.round().int()
         labels = labels.int()
-
-        
-        # TODO here for debugging
-        '''nplabels = labels.cpu().numpy()
-        npoutputs = outputs.cpu().numpy()
-        npcorrect = labels.eq(preds).cpu().numpy()
-        print(np.stack([nplabels, npoutputs, npcorrect], axis=1))
-        '''
-
         correct += labels.eq(preds).sum().item()
         x_diff = preds[:,0] - labels[:,0]
         y_diff = preds[:,1] - labels[:,1]
@@ -310,8 +301,8 @@ with torch.no_grad():
             if x_diff[i].item() != 0 or y_diff[i].item() != 0:
                 # if vector v predicted incorrectly
                 # get actual and predicted vx,vy
-                pred = preds[i] - 10
-                label = labels[i] - 10
+                pred = preds[i]
+                label = labels[i]
                 vxp = pred[0].item()
                 vyp = pred[1].item()
                 vx = label[0].item()
