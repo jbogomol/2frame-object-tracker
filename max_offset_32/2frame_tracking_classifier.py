@@ -28,7 +28,7 @@ import random
 
 
 # train or not
-training_on = False
+training_on = True
 
 # on server or local computer
 on_server = torch.cuda.is_available()
@@ -77,7 +77,7 @@ class TwoFrameTrackingDataset(torch.utils.data.Dataset):
         imgs = torch.cat((imgcenter, imgtrans), dim=0)
         imgs = imgs.float()
         
-        v = self.resultsframe.iloc[index, 2:].to_numpy(dtype=int)
+        v = self.resultsframe.iloc[index, 2:].to_numpy(dtype=float)
         
         data = [imgs, v]
 
@@ -97,7 +97,7 @@ batch_size_validation = 256
 batch_size_test = 1
 learning_rate = 0.001
 momentum = 0.9
-log_interval = 9999999 # print every log_interval mini batches
+log_interval = 10 # print every log_interval mini batches
 
 # keep same random seed for replicable results
 random_seed = 1
@@ -186,7 +186,7 @@ class Network(nn.Module):
 
         # (5) output layer
         t = self.out(t)
-        t = t.reshape(-1, 2, 21)
+        t = t.reshape(-1, 2, 65)
         return t
 
 network = Network()
@@ -210,8 +210,8 @@ if training_on:
                 labels = labels.cuda()
 
             # reformat labels
-            labels = labels + 10
-            # labels = F.one_hot(labels)
+            labels = labels + 32
+            labels = labels.long()
             labels_x = labels[:,0]
             labels_y = labels[:,1]
 
@@ -251,7 +251,7 @@ if training_on:
                     labels = labels.cuda()
                 outputs = network(images)
                 preds = outputs.argmax(dim=2) # i think this is correct?
-                labels += 10
+                labels += 32
                 correct += labels.eq(preds).sum().item()
                 off_by_one_pos = labels.eq(preds + 1).sum().item()
                 off_by_one_neg = labels.eq(preds - 1).sum().item()
@@ -282,7 +282,7 @@ correct = 0
 errcount = 0
 total = n_test * 2
 heatmap = []
-errmap = np.zeros([21, 21])
+errmap = np.zeros([65, 65])
 
 # empty error directory to fill with new errors
 for filename in os.listdir(reportdir + 'errors/'):
@@ -296,7 +296,7 @@ with torch.no_grad():
             labels = labels.cuda()
         outputs = network(images)
         preds = outputs.argmax(dim=2)
-        labels += 10
+        labels += 32
         correct += labels.eq(preds).sum().item()
         x_diff = preds[:,0] - labels[:,0]
         y_diff = preds[:,1] - labels[:,1]
@@ -305,11 +305,11 @@ with torch.no_grad():
             error = abs(x_diff[i].item()) + abs(y_diff[i].item())
             errmap[preds[i][1]][preds[i][0]] += error
 
-            if error != 0:
+            if error > 0:
                 # if vector v predicted incorrectly
                 # get actual and predicted vx,vy
-                pred = preds[i] - 10
-                label = labels[i] - 10
+                pred = preds[i] - 32
+                label = labels[i] - 32
                 vxp = pred[0].item()
                 vyp = pred[1].item()
                 vx = label[0].item()
@@ -363,8 +363,8 @@ plt.imshow(errmap, cmap='hot', interpolation='nearest')
 plt.xlabel('x-component of offset vector')
 plt.ylabel('y-component of offset vector')
 plt.title('Sum of |ex| + |ey| on all images in test set')
-plt.xticks(range(21), range(-10, 11))
-plt.yticks(range(21), range(-10, 11))
+plt.xticks(range(65), range(-32, 33))
+plt.yticks(range(65), range(-32, 33))
 plt.savefig(os.path.join(reportdir, 'errmap_classifier.png'))
 
 

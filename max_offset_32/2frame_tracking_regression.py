@@ -28,7 +28,7 @@ import random
 
 
 # train or not
-training_on = False
+training_on = True
 
 # on server or local computer
 on_server = torch.cuda.is_available()
@@ -77,7 +77,7 @@ class TwoFrameTrackingDataset(torch.utils.data.Dataset):
         imgs = torch.cat((imgcenter, imgtrans), dim=0)
         imgs = imgs.float()
         
-        v = self.resultsframe.iloc[index, 2:].to_numpy(dtype=int)
+        v = self.resultsframe.iloc[index, 2:].to_numpy(dtype=float)
         
         data = [imgs, v]
 
@@ -207,7 +207,7 @@ if training_on:
             if on_server:
                 inputs = inputs.cuda()
                 labels = labels.cuda()
-            
+
             # reformat labels
             labels_x = labels[:,0].float()
             labels_y = labels[:,1].float()
@@ -279,7 +279,7 @@ correct = 0
 errcount = 0
 total = n_test * 2
 heatmap = []
-errmap = np.zeros([21, 21])
+errmap = np.zeros([65, 65])
 
 # empty error directory to fill with new errors
 for filename in os.listdir(reportdir + 'errors/'):
@@ -292,17 +292,22 @@ with torch.no_grad():
             images = images.cuda()
             labels = labels.cuda()
         outputs = network(images)
-        preds = outputs.round().int()
-        labels = labels.int()
-        correct += labels.eq(preds).sum().item()
+        preds = outputs
         x_diff = preds[:,0] - labels[:,0]
         y_diff = preds[:,1] - labels[:,1]
         for i in range(batch_size_test):
             heatmap.append([x_diff[i].item(), y_diff[i].item()])
-            error = abs(x_diff[i].item()) + abs(y_diff[i].item())
-            errmap[preds[i][1]][preds[i][0]] += error
+            error_x = abs(x_diff[i].item())
+            error_y = abs(y_diff[i].item())
+            error = error_x + error_y
+            errmap[preds[i][1].round()][preds[i][0].round()] += error
 
-            if error != 0:
+            if error_x < 1:
+                correct += 1
+            if error_y < 1:
+                correct += 1
+
+            if error > 0:
                 # if vector v predicted incorrectly
                 # get actual and predicted vx,vy
                 pred = preds[i]
@@ -360,8 +365,8 @@ plt.imshow(errmap, cmap='hot', interpolation='nearest')
 plt.xlabel('x-component of offset vector')
 plt.ylabel('y-component of offset vector')
 plt.title('Sum of |ex| + |ey| on all images in test set')
-plt.xticks(range(21), range(-10, 11))
-plt.yticks(range(21), range(-10, 11))
+plt.xticks(range(65), range(-32, 33))
+plt.yticks(range(65), range(-32, 33))
 plt.savefig(os.path.join(reportdir, 'errmap_regression.png'))
 
 
