@@ -1,10 +1,11 @@
 # 2frame_tracking_classifier.py
 #
 # @author       Jackson Bogomolny <jbogomol@andrew.cmu.edu>
-# @date         06/10/2020
+# @date         07/07/2020
 #
 # Trains a convolutional network to guess frame-to-frame object motion
-# from -10 to 10 pixels in x or y direction.
+# from -32 to 32 pixels in x or y direction. Interpolates with non-integer
+# offset.
 # Formulated as a classification problem with a cross-entropy loss function.
 #
 # Before running, run create_images.py to create necessary images from
