@@ -18,13 +18,13 @@ on_server = torch.cuda.is_available()
 if on_server:
     imdir = '/home/datasets/data_jbogomol/flickr30k/flickr30k_images'
 else:    
-    imdir = './flickr30k/flickr30k_images'
+    imdir = '../flickr30k/flickr30k_images'
 
 # directory for results
 if on_server:
     resultsdir = '/home/datasets/data_jbogomol/flickr30k/resized'
 else:
-    resultsdir = './flickr30k/resized'
+    resultsdir = '../flickr30k/resized'
 
 # size of results
 resultssize = 256

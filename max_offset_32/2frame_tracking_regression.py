@@ -1,11 +1,11 @@
 # 2frame_tracking_classifier.py
 #
 # @author       Jackson Bogomolny <jbogomol@andrew.cmu.edu>
-# @date         06/10/2020
+# @date         07/01/2020
 #
 # Trains a convolutional network to guess frame-to-frame object motion
 # from -10 to 10 pixels in x or y direction.
-# Formulated as a classification problem with a cross-entropy loss function.
+# Formulated as a regression problem with a mean squared error loss function.
 #
 # Before running, run create_images.py to create necessary images from
 # data as well as results.csv file containing ground truths
@@ -36,10 +36,10 @@ on_server = torch.cuda.is_available()
 if on_server:
     resultsdir = '/home/datasets/data_jbogomol/flickr30k/results'
 else:
-    resultsdir = './flickr30k/results'
+    resultsdir = '../flickr30k/results'
 
 # directory to store saves
-reportdir = './report_classifier/'
+reportdir = './report_regression/'
 
 # csv path
 csvpath = os.path.join(resultsdir, 'results.csv')
@@ -94,9 +94,9 @@ n_epochs = 50
 batch_size_train = 64
 batch_size_validation = 256
 batch_size_test = 1
-learning_rate = 0.001
+learning_rate = 0.001 # 0.001 for classifier
 momentum = 0.9
-log_interval = 9999999 # print every log_interval mini batches
+log_interval = 10 # print every log_interval mini batches
 
 # keep same random seed for replicable results
 random_seed = 1
@@ -154,7 +154,7 @@ class Network(nn.Module):
         self.conv3_bn = nn.BatchNorm2d(num_features=64)
         self.fc1 = nn.Linear(in_features=64*31*31, out_features=120)
         self.fc2 = nn.Linear(in_features=120, out_features=60)
-        self.out = nn.Linear(in_features=60, out_features=42)
+        self.out = nn.Linear(in_features=60, out_features=2)
 
     def forward(self, t):
         # (1) convolutional layer
@@ -185,7 +185,6 @@ class Network(nn.Module):
 
         # (5) output layer
         t = self.out(t)
-        t = t.reshape(-1, 2, 21)
         return t
 
 network = Network()
@@ -207,22 +206,20 @@ if training_on:
             if on_server:
                 inputs = inputs.cuda()
                 labels = labels.cuda()
-
+            
             # reformat labels
-            labels = labels + 10
-            # labels = F.one_hot(labels)
-            labels_x = labels[:,0]
-            labels_y = labels[:,1]
+            labels_x = labels[:,0].float()
+            labels_y = labels[:,1].float()
 
             # zero the gradients
             optimizer.zero_grad()
 
             # forward, backward, optimize
             outputs = network(inputs)
-            outputs_x = outputs[:,0,:]
-            outputs_y = outputs[:,1,:]
-            loss_x = F.cross_entropy(outputs_x, labels_x)
-            loss_y = F.cross_entropy(outputs_y, labels_y)
+            outputs_x = outputs[:,0]
+            outputs_y = outputs[:,1]
+            loss_x = F.mse_loss(outputs_x, labels_x)
+            loss_y = F.mse_loss(outputs_y, labels_y)
             loss = loss_x + loss_y
             loss.backward()
             optimizer.step()
@@ -249,8 +246,8 @@ if training_on:
                     images = images.cuda()
                     labels = labels.cuda()
                 outputs = network(images)
-                preds = outputs.argmax(dim=2) # i think this is correct?
-                labels += 10
+                preds = outputs.round().int()
+                labels = labels.int()
                 correct += labels.eq(preds).sum().item()
                 off_by_one_pos = labels.eq(preds + 1).sum().item()
                 off_by_one_neg = labels.eq(preds - 1).sum().item()
@@ -281,6 +278,7 @@ correct = 0
 errcount = 0
 total = n_test * 2
 heatmap = []
+errmap = np.zeros([21, 21])
 
 # empty error directory to fill with new errors
 for filename in os.listdir(reportdir + 'errors/'):
@@ -293,19 +291,21 @@ with torch.no_grad():
             images = images.cuda()
             labels = labels.cuda()
         outputs = network(images)
-        preds = outputs.argmax(dim=2)
-        labels += 10
+        preds = outputs.round().int()
+        labels = labels.int()
         correct += labels.eq(preds).sum().item()
         x_diff = preds[:,0] - labels[:,0]
         y_diff = preds[:,1] - labels[:,1]
         for i in range(batch_size_test):
             heatmap.append([x_diff[i].item(), y_diff[i].item()])
-            
-            if x_diff[i].item() != 0 or y_diff[i].item() != 0:
+            error = abs(x_diff[i].item()) + abs(y_diff[i].item())
+            errmap[preds[i][1]][preds[i][0]] += error
+
+            if error != 0:
                 # if vector v predicted incorrectly
                 # get actual and predicted vx,vy
-                pred = preds[i] - 10
-                label = labels[i] - 10
+                pred = preds[i]
+                label = labels[i]
                 vxp = pred[0].item()
                 vyp = pred[1].item()
                 vx = label[0].item()
@@ -344,14 +344,32 @@ heatmap = np.array(heatmap)
 columns = ['X diff (prediction - label)', 'Y diff (prediction - label)']
 heatmap_df = pd.DataFrame(data=heatmap, columns=columns)
 plt.figure()
-plt.title('Heat map, trained with cross-entropy loss')
+plt.title('Heat map, trained with mean squared error loss')
 heatmap_plot = sb.jointplot(
         x='X diff (prediction - label)',
         y='Y diff (prediction - label)',
         data=heatmap_df,
         kind='scatter'
     )
-plt.savefig(os.path.join(reportdir, 'heatmap_classifier.png'))
+plt.savefig(os.path.join(reportdir, 'heatmap_regression.png'))
+
+# show error map
+plt.figure()
+plt.imshow(errmap, cmap='hot', interpolation='nearest')
+plt.xlabel('x-component of offset vector')
+plt.ylabel('y-component of offset vector')
+plt.title('Sum of |ex| + |ey| on all images in test set')
+plt.xticks(range(21), range(-10, 11))
+plt.yticks(range(21), range(-10, 11))
+plt.savefig(os.path.join(reportdir, 'errmap_regression.png'))
+
+
+
+
+
+
+
+
 
 
 

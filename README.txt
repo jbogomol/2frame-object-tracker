@@ -21,7 +21,10 @@ How the dataset is created:
   - Create frame 2 the same way as frame 1, but with the object shifted from
     the center by a random vector v = <vx, vy> such that:
         -10 <= vx <= 10
-        -10 <= vy <= 10
+        -10 <= vy <= 10 in ./max_offset_10/
+        -OR-
+        -32 <= vx <= 32
+        -32 <= vy <= 32 in ./max_offset_32/
     where vx is the horizontal shift from the center, and vy is the vertical
     shift from the center.
   - A batch of size 1 includes both corresponding frames and their vector v.
@@ -53,6 +56,8 @@ Network architecture:
 
 
 ~ HOW TO RUN ~
+
+Pick a max offset (10 or 32)
 
 1. resize_all.py
     Takes images from source directory, resizes them to a given

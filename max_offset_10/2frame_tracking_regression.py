@@ -36,7 +36,7 @@ on_server = torch.cuda.is_available()
 if on_server:
     resultsdir = '/home/datasets/data_jbogomol/flickr30k/results'
 else:
-    resultsdir = './flickr30k/results'
+    resultsdir = '../flickr30k/results'
 
 # directory to store saves
 reportdir = './report_regression/'
@@ -278,6 +278,7 @@ correct = 0
 errcount = 0
 total = n_test * 2
 heatmap = []
+errmap = np.zeros([21, 21])
 
 # empty error directory to fill with new errors
 for filename in os.listdir(reportdir + 'errors/'):
@@ -297,8 +298,10 @@ with torch.no_grad():
         y_diff = preds[:,1] - labels[:,1]
         for i in range(batch_size_test):
             heatmap.append([x_diff[i].item(), y_diff[i].item()])
-            
-            if x_diff[i].item() != 0 or y_diff[i].item() != 0:
+            error = abs(x_diff[i].item()) + abs(y_diff[i].item())
+            errmap[preds[i][1]][preds[i][0]] += error
+
+            if error != 0:
                 # if vector v predicted incorrectly
                 # get actual and predicted vx,vy
                 pred = preds[i]
@@ -349,6 +352,24 @@ heatmap_plot = sb.jointplot(
         kind='scatter'
     )
 plt.savefig(os.path.join(reportdir, 'heatmap_regression.png'))
+
+# show error map
+plt.figure()
+plt.imshow(errmap, cmap='hot', interpolation='nearest')
+plt.xlabel('x-component of offset vector')
+plt.ylabel('y-component of offset vector')
+plt.title('Sum of |ex| + |ey| on all images in test set')
+plt.xticks(range(21), range(-10, 11))
+plt.yticks(range(21), range(-10, 11))
+plt.savefig(os.path.join(reportdir, 'errmap_regression.png'))
+
+
+
+
+
+
+
+
 
 
 

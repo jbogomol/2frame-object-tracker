@@ -33,13 +33,13 @@ on_server = torch.cuda.is_available()
 if on_server:
     imdir = '/home/datasets/data_jbogomol/flickr30k/resized'
 else:
-    imdir = './flickr30k/resized'
+    imdir = '../flickr30k/resized'
 
 # directory to store results in
 if on_server:
     resultsdir = '/home/datasets/data_jbogomol/flickr30k/results'
 else:
-    resultsdir = './flickr30k/results'
+    resultsdir = '../flickr30k/results'
 
 # size of square "object" to cut from fg and paste in bg
 objsize = 128
