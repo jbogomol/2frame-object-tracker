@@ -50,7 +50,7 @@ netpath = os.path.join(reportdir, '2frame_net.pth')
 
 # which gpu
 if on_server:
-    torch.cuda.set_device(0)
+    torch.cuda.set_device(2)
 
 
 # dataset class
@@ -252,6 +252,7 @@ if training_on:
                 outputs = network(images)
                 preds = outputs.argmax(dim=2) # i think this is correct?
                 labels += 32
+                labels = labels.round()
                 correct += labels.eq(preds).sum().item()
                 off_by_one_pos = labels.eq(preds + 1).sum().item()
                 off_by_one_neg = labels.eq(preds - 1).sum().item()
