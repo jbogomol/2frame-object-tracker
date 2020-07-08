@@ -219,8 +219,8 @@ if training_on:
             outputs = network(inputs)
             outputs_x = outputs[:,0]
             outputs_y = outputs[:,1]
-            loss_x = F.mse_loss(outputs_x, labels_x)
-            loss_y = F.mse_loss(outputs_y, labels_y)
+            loss_x = F.mse_loss(outputs_x, labels_x, reduction='sum')
+            loss_y = F.mse_loss(outputs_y, labels_y, reduction='sum')
             loss = loss_x + loss_y
             loss.backward()
             optimizer.step()
@@ -247,13 +247,25 @@ if training_on:
                     images = images.cuda()
                     labels = labels.cuda()
                 outputs = network(images)
-                preds = outputs.round().int()
-                labels = labels.round().int()
-                preds = preds.round().int()
-                correct += labels.eq(preds).sum().item()
-                off_by_one_pos = labels.eq(preds + 1).sum().item()
-                off_by_one_neg = labels.eq(preds - 1).sum().item()
-                off_by_one += off_by_one_pos + off_by_one_neg
+                preds = outputs
+                labels = labels
+                x_diff = preds[:,0] - labels[:,0]
+                y_diff = preds[:,1] - labels[:,1]
+                for i in range(batch_size_validation):
+                    error_x = abs(x_diff[i].item())
+                    error_y = abs(y_diff[i].item())
+
+                    if error_x < 1:
+                        correct += 1
+                    elif error_x < 2:
+                        off_by_one += 1
+                    
+                    if error_y < 1:
+                        correct += 1
+                    elif error_y < 2:
+                        off_by_one += 1
+
+
         print('# correct:  ' + str(correct) + '/' + str(total) + ' = '
               + str(100.0*correct/total) + '%')
         print('# off by 1: ' + str(off_by_one) + '/' + str(total) + ' = '

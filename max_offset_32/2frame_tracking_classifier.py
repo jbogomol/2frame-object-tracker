@@ -253,7 +253,7 @@ if training_on:
                 preds = outputs.argmax(dim=2) # i think this is correct?
                 labels += 32
                 x_diff = preds[:,0] - labels[:,0]
-                y_diff = preds[:,0] - labels[:,0]
+                y_diff = preds[:,1] - labels[:,1]
                 for i in range(batch_size_validation):
                     error_x = abs(x_diff[i].item())
                     error_y = abs(y_diff[i].item())
