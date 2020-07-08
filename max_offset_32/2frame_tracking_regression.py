@@ -28,7 +28,7 @@ import random
 
 
 # train or not
-training_on = False
+training_on = True
 
 # on server or local computer
 on_server = torch.cuda.is_available()
@@ -294,6 +294,7 @@ with torch.no_grad():
             labels = labels.cuda()
         outputs = network(images)
         preds = outputs
+        predsint = preds.int()
         x_diff = preds[:,0] - labels[:,0]
         y_diff = preds[:,1] - labels[:,1]
         for i in range(batch_size_test):
@@ -301,7 +302,7 @@ with torch.no_grad():
             error_x = abs(x_diff[i].item())
             error_y = abs(y_diff[i].item())
             error = error_x + error_y
-            errmap[preds[i][1].round()][preds[i][0].round()] += error
+            errmap[predsint[i][1]][predsint[i][0]] += error
 
             if error_x < 1:
                 correct += 1
@@ -313,10 +314,10 @@ with torch.no_grad():
                 # get actual and predicted vx,vy
                 pred = preds[i]
                 label = labels[i]
-                vxp = pred[0].item()
-                vyp = pred[1].item()
-                vx = label[0].item()
-                vy = label[1].item()
+                vxp = pred[0].int().item()
+                vyp = pred[1].int().item()
+                vx = label[0].int().item()
+                vy = label[1].int().item()
                 # save an image with bounding boxes
                 # actual in green, predicted in blue
                 images = images.cpu()
