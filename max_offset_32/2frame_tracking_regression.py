@@ -28,7 +28,7 @@ import random
 
 
 # train or not
-training_on = True
+training_on = False
 
 # on server or local computer
 on_server = torch.cuda.is_available()
@@ -93,7 +93,7 @@ class TwoFrameTrackingDataset(torch.utils.data.Dataset):
 # network hyperparameters
 n_epochs = 50
 batch_size_train = 64
-batch_size_validation = 256
+batch_size_validation = 1
 batch_size_test = 1
 learning_rate = 0.001 # 0.001 for classifier
 momentum = 0.9
@@ -308,7 +308,7 @@ with torch.no_grad():
             if error_y < 1:
                 correct += 1
 
-            if error > 0:
+            if error > 1:
                 # if vector v predicted incorrectly
                 # get actual and predicted vx,vy
                 pred = preds[i]

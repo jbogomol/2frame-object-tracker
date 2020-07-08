@@ -93,7 +93,7 @@ class TwoFrameTrackingDataset(torch.utils.data.Dataset):
 # network hyperparameters
 n_epochs = 50
 batch_size_train = 64
-batch_size_validation = 256
+batch_size_validation = 1
 batch_size_test = 1
 learning_rate = 0.001
 momentum = 0.9
@@ -252,11 +252,23 @@ if training_on:
                 outputs = network(images)
                 preds = outputs.argmax(dim=2) # i think this is correct?
                 labels += 32
-                labels = labels.round()
-                correct += labels.eq(preds).sum().item()
-                off_by_one_pos = labels.eq(preds + 1).sum().item()
-                off_by_one_neg = labels.eq(preds - 1).sum().item()
-                off_by_one += off_by_one_pos + off_by_one_neg
+                x_diff = preds[:,0] - labels[:,0]
+                y_diff = preds[:,0] - labels[:,0]
+                for i in range(batch_size_validation):
+                    error_x = abs(x_diff[i].item())
+                    error_y = abs(y_diff[i].item())
+                    
+                    if error_x < 1:
+                        correct += 1
+                    elif error_x < 2:
+                        off_by_one += 1
+
+                    if error_y < 1:
+                        correct += 1
+                    elif error_y < 2:
+                        off_by_one += 1
+
+
         print('# correct:  ' + str(correct) + '/' + str(total) + ' = '
               + str(100.0*correct/total) + '%')
         print('# off by 1: ' + str(off_by_one) + '/' + str(total) + ' = '
@@ -298,23 +310,29 @@ with torch.no_grad():
         outputs = network(images)
         preds = outputs.argmax(dim=2)
         labels += 32
-        correct += labels.eq(preds).sum().item()
         x_diff = preds[:,0] - labels[:,0]
         y_diff = preds[:,1] - labels[:,1]
         for i in range(batch_size_test):
             heatmap.append([x_diff[i].item(), y_diff[i].item()])
-            error = abs(x_diff[i].item()) + abs(y_diff[i].item())
+            error_x = abs(x_diff[i].item())
+            error_y = abs(y_diff[i].item())
+            error = error_x + error_y
             errmap[preds[i][1]][preds[i][0]] += error
 
-            if error > 0:
+            if error_x < 1:
+                correct += 1
+            if error_y < 1:
+                correct += 1
+
+            if error > 1:
                 # if vector v predicted incorrectly
                 # get actual and predicted vx,vy
                 pred = preds[i] - 32
                 label = labels[i] - 32
-                vxp = pred[0].item()
-                vyp = pred[1].item()
-                vx = label[0].item()
-                vy = label[1].item()
+                vxp = pred[0].int().item()
+                vyp = pred[1].int().item()
+                vx = label[0].int().item()
+                vy = label[1].int().item()
                 # save an image with bounding boxes
                 # actual in green, predicted in blue
                 images = images.cpu()
@@ -322,8 +340,9 @@ with torch.no_grad():
                 img_trans = img[3:,:,:]
                 img_trans = np.transpose(img_trans, (1, 2, 0))
                 img_trans = cv2.resize(img_trans, (256, 256))
+                img_trans = img_trans.astype('uint8')
                 img_rect = cv2.rectangle(
-                    img=img_trans,
+                    img_trans,
                     pt1=(64+vx, 64+vy),
                     pt2=(64+128+vx, 64+128+vy),
                     color=(0, 255, 0),
