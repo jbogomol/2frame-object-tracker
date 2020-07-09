@@ -154,9 +154,8 @@ class Network(nn.Module):
                                kernel_size=3, stride=2)
         self.conv3_bn = nn.BatchNorm2d(num_features=64)
         self.fc1 = nn.Linear(in_features=64*31*31, out_features=120)
-        # self.fc2 = nn.Linear(in_features=120, out_features=60)
-        # self.out = nn.Linear(in_features=60, out_features=2)
-        self.out = nn.Linear(in_features=120, out_features=2) # TODO new
+        self.out = nn.Linear(in_features=120, out_features=2)
+    
     def forward(self, t):
         # (1) convolutional layer
         t = self.conv1(t)
@@ -173,16 +172,10 @@ class Network(nn.Module):
         t = self.conv3_bn(t)
         t = F.relu(t)
 
-        #print('after conv layers: t.shape =', t.shape)
-        
-        # (3) fully connected layer
+        # (4) fully connected layer
         t = t.reshape(-1, 64*31*31)
         t = self.fc1(t)
         t = F.relu(t)
-
-        # (4) fully connected layer
-        #t = self.fc2(t)
-        #t = F.relu(t)
 
         # (5) output layer
         t = self.out(t)
@@ -331,13 +324,16 @@ with torch.no_grad():
                 vyp = pred[1].int().item()
                 vx = label[0].int().item()
                 vy = label[1].int().item()
-                # save an image with bounding boxes
-                # actual in green, predicted in blue
+                
+                # load image to draw bounding boxes on
                 images = images.cpu()
                 img = images[0].numpy()
                 img_trans = img[3:,:,:]
                 img_trans = np.transpose(img_trans, (1, 2, 0))
                 img_trans = cv2.resize(img_trans, (256, 256))
+                
+                # draw the bounding boxes
+                # actual in green, predicted in blue
                 img_rect = cv2.rectangle(
                     img=img_trans,
                     pt1=(64+vx, 64+vy),
@@ -350,6 +346,8 @@ with torch.no_grad():
                     pt2=(64+128+vxp, 64+128+vyp),
                     color=(255, 0, 0),
                     thickness=1)
+                
+                # save error image, increment error count
                 imgname = 'err_' + str(errcount) + '.jpg'
                 cv2.imwrite(os.path.join(reportdir + 'errors/', imgname),
                     img_rect)
@@ -380,8 +378,17 @@ plt.imshow(errmap, cmap='hot', interpolation='nearest')
 plt.xlabel('x-component of offset vector')
 plt.ylabel('y-component of offset vector')
 plt.title('Sum of |ex| + |ey| on all images in test set')
-plt.xticks(range(65), range(-32, 33))
-plt.yticks(range(65), range(-32, 33))
+
+# create ticks vector
+ticks = []
+for i in range(-32, 33):
+    if i % 8 == 0:
+        ticks.append(i)
+    else:
+        ticks.append(None)
+
+plt.xticks(range(65), ticks)
+plt.yticks(range(65), ticks)
 plt.savefig(os.path.join(reportdir, 'errmap_regression.png'))
 
 

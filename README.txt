@@ -29,7 +29,7 @@ How the dataset is created:
     shift from the center.
   - A batch of size 1 includes both corresponding frames and their vector v.
 
-Network architecture:
+Network architecture (for max_offset_10*):
   - Input layer of shape torch.Size([<batch_size>, 6, 256, 256])
         - The 6 channels are the RGB channels of both frames concatenated
   - 3 convolutional layers with the following specs:
@@ -52,6 +52,9 @@ Network architecture:
            size 2 (output layer) - 2frame_tracking_regression.py
            where the first number is the predicted vx,
            and the second number is the predicted vy
+*max_offset_32 is very similar and can be inferred easily from the code.
+ One notable exception, however, is the regression model, which is missing
+ one of its fully-connected layers to avoid exploding gradient.
 
 
 

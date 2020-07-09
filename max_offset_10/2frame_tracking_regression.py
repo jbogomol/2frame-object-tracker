@@ -172,18 +172,16 @@ class Network(nn.Module):
         t = self.conv3_bn(t)
         t = F.relu(t)
 
-        #print('after conv layers: t.shape =', t.shape)
-        
-        # (3) fully connected layer
+        # (4) fully connected layer
         t = t.reshape(-1, 64*31*31)
         t = self.fc1(t)
         t = F.relu(t)
 
-        # (4) fully connected layer
+        # (5) fully connected layer
         t = self.fc2(t)
         t = F.relu(t)
 
-        # (5) output layer
+        # (6) output layer
         t = self.out(t)
         return t
 
@@ -310,13 +308,16 @@ with torch.no_grad():
                 vyp = pred[1].item()
                 vx = label[0].item()
                 vy = label[1].item()
-                # save an image with bounding boxes
-                # actual in green, predicted in blue
+                
+                # load image to draw bounding boxes on
                 images = images.cpu()
                 img = images[0].numpy()
                 img_trans = img[3:,:,:]
                 img_trans = np.transpose(img_trans, (1, 2, 0))
                 img_trans = cv2.resize(img_trans, (256, 256))
+                
+                # draw the bounding boxes
+                # actual in green, predicted in blue
                 img_rect = cv2.rectangle(
                     img=img_trans,
                     pt1=(64+vx, 64+vy),
@@ -329,6 +330,8 @@ with torch.no_grad():
                     pt2=(64+128+vxp, 64+128+vyp),
                     color=(255, 0, 0),
                     thickness=1)
+
+                # save error image, increment error count
                 imgname = 'err_' + str(errcount) + '.jpg'
                 cv2.imwrite(os.path.join(reportdir + 'errors/', imgname),
                     img_rect)
