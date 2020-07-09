@@ -294,6 +294,7 @@ errcount = 0
 total = n_test * 2
 heatmap = []
 errmap = np.zeros([65, 65])
+count = np.zeros([65, 65])
 
 # empty error directory to fill with new errors
 for filename in os.listdir(reportdir + 'errors/'):
@@ -308,6 +309,7 @@ with torch.no_grad():
         outputs = network(images)
         preds = outputs.argmax(dim=2)
         labels += 32
+        labelsint = labels.round().int()
         x_diff = preds[:,0] - labels[:,0]
         y_diff = preds[:,1] - labels[:,1]
         for i in range(batch_size_test):
@@ -315,7 +317,8 @@ with torch.no_grad():
             error_x = abs(x_diff[i].item())
             error_y = abs(y_diff[i].item())
             error = error_x + error_y
-            errmap[preds[i][1]][preds[i][0]] += error
+            errmap[labelsint[i][1]][labelsint[i][0]] += error
+            count[labelsint[i][1]][labelsint[i][0]] += 1
 
             if error_x < 1:
                 correct += 1
@@ -397,9 +400,16 @@ for i in range(-32, 33):
 
 plt.xticks(range(65), ticks)
 plt.yticks(range(65), ticks)
+plt.colorbar()
 plt.savefig(os.path.join(reportdir, 'errmap_classifier.png'))
 
 
+'''
+# debug code
+for i in range(65):
+    for j in range(65):
+        print(i - 33, j - 33, errmap[i][j], count[i][j])
+'''
 
 
 
