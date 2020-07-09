@@ -28,7 +28,7 @@ import random
 
 
 # train or not
-training_on = True
+training_on = False
 
 # on server or local computer
 on_server = torch.cuda.is_available()

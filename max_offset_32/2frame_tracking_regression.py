@@ -28,7 +28,7 @@ import random
 
 
 # train or not
-training_on = True
+training_on = False
 
 # on server or local computer
 on_server = torch.cuda.is_available()
@@ -154,9 +154,9 @@ class Network(nn.Module):
                                kernel_size=3, stride=2)
         self.conv3_bn = nn.BatchNorm2d(num_features=64)
         self.fc1 = nn.Linear(in_features=64*31*31, out_features=120)
-        self.fc2 = nn.Linear(in_features=120, out_features=60)
-        self.out = nn.Linear(in_features=60, out_features=2)
-
+        # self.fc2 = nn.Linear(in_features=120, out_features=60)
+        # self.out = nn.Linear(in_features=60, out_features=2)
+        self.out = nn.Linear(in_features=120, out_features=2) # TODO new
     def forward(self, t):
         # (1) convolutional layer
         t = self.conv1(t)
@@ -181,8 +181,8 @@ class Network(nn.Module):
         t = F.relu(t)
 
         # (4) fully connected layer
-        t = self.fc2(t)
-        t = F.relu(t)
+        #t = self.fc2(t)
+        #t = F.relu(t)
 
         # (5) output layer
         t = self.out(t)
@@ -192,6 +192,7 @@ network = Network()
 if on_server:
     network = network.cuda()
 print('network:', network)
+criterion = nn.MSELoss()
 
 optimizer = optim.SGD(network.parameters(), lr=learning_rate, momentum=momentum)
 
@@ -219,8 +220,8 @@ if training_on:
             outputs = network(inputs)
             outputs_x = outputs[:,0]
             outputs_y = outputs[:,1]
-            loss_x = F.mse_loss(outputs_x, labels_x, reduction='sum')
-            loss_y = F.mse_loss(outputs_y, labels_y, reduction='sum')
+            loss_x = criterion(outputs_x, labels_x)
+            loss_y = criterion(outputs_y, labels_y)
             loss = loss_x + loss_y
             loss.backward()
             optimizer.step()
