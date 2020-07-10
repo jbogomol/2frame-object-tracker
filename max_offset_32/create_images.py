@@ -86,102 +86,117 @@ csv = open(os.path.join(resultsdir, 'results.csv'), 'w+')
 csv.write('img_center,img_trans,vx,vy\n')
 
 # make the new images
-halfobjsize = objsize // 2
-for i in range(10000):
-    # load a bg and fg image
-    imgbg = cv2.imread(bglist[i], -1)
-    imgfg = cv2.imread(fglist[i], -1)
+def make_10k_images(bglist, fglist, istart):
+    halfobjsize = objsize // 2
+    for i in range(10000):
+        # load a bg and fg image
+        imgbg = cv2.imread(bglist[i], -1)
+        imgfg = cv2.imread(fglist[i], -1)
 
-    # make sure the images exist and have 3 (BGR) channels
-    h_bg, w_bg, channels_bg = imgbg.shape
-    h_fg, w_fg, channels_fg = imgfg.shape
-    if channels_bg != 3:
-        print(filename_bg + ' has ' + str(channels_bg) + ' channels!')
-        continue
-    if channels_fg != 3:
-        print(filename_fg + ' has ' + str(channels_fg) + ' channels!')
-        continue
+        # make sure the images exist and have 3 (BGR) channels
+        h_bg, w_bg, channels_bg = imgbg.shape
+        h_fg, w_fg, channels_fg = imgfg.shape
+        if channels_bg != 3:
+            print(filename_bg + ' has ' + str(channels_bg) + ' channels!')
+            continue
+        if channels_fg != 3:
+            print(filename_fg + ' has ' + str(channels_fg) + ' channels!')
+            continue
     
-    # get random translation vector
-    vy = random.random()*(2*maxtrans) - maxtrans
-    vx = random.random()*(2*maxtrans) - maxtrans
+        # get random translation vector
+        vy = random.random()*(2*maxtrans) - maxtrans
+        vx = random.random()*(2*maxtrans) - maxtrans
 
-    # find center of both images
-    cy_bg = h_bg // 2
-    cx_bg = w_bg // 2
-    cy_fg = h_fg // 2
-    cx_fg = w_fg // 2
+        # find center of both images
+        cy_bg = h_bg // 2
+        cx_bg = w_bg // 2
+        cy_fg = h_fg // 2
+        cx_fg = w_fg // 2
 
-    # get coordinates of object
-    # bg
-    y1_bg = cy_bg - halfobjsize
-    y2_bg = cy_bg + halfobjsize
-    x1_bg = cx_bg - halfobjsize
-    x2_bg = cx_bg + halfobjsize
-    # fg
-    y1_fg = cy_fg - halfobjsize
-    y2_fg = cy_fg + halfobjsize
-    x1_fg = cx_fg - halfobjsize
-    x2_fg = cx_fg + halfobjsize
-    # translated by vector
-    y1_bgt = y1_bg + vy
-    y2_bgt = y2_bg + vy
-    x1_bgt = x1_bg + vx
-    x2_bgt = x2_bg + vx
+        # get coordinates of object
+        # bg
+        y1_bg = cy_bg - halfobjsize
+        y2_bg = cy_bg + halfobjsize
+        x1_bg = cx_bg - halfobjsize
+        x2_bg = cx_bg + halfobjsize
+        # fg
+        y1_fg = cy_fg - halfobjsize
+        y2_fg = cy_fg + halfobjsize
+        x1_fg = cx_fg - halfobjsize
+        x2_fg = cx_fg + halfobjsize
+        # translated by vector
+        y1_bgt = y1_bg + vy
+        y2_bgt = y2_bg + vy
+        x1_bgt = x1_bg + vx
+        x2_bgt = x2_bg + vx
 
-    # snip object from fg
-    obj = imgfg[y1_fg:y2_fg, x1_fg:x2_fg]
+        # snip object from fg
+        obj = imgfg[y1_fg:y2_fg, x1_fg:x2_fg]
 
-    # TODO
-    '''
-    # paste object in center of bg
-    imgobjcenter = imgbg.copy()
-    imgobjtrans = imgbg.copy()
-    imgobjcenter[y1_bg:y2_bg, x1_bg:x2_bg] = obj
-    imgobjtrans[y1_bgt:y2_bgt, x1_bgt:x2_bgt] = obj
-    '''
+        # paste object in center of blank img
+        imgblank = np.zeros([imgsize, imgsize, 3])
+        imgblank_objcenter = imgblank.copy()
+        imgblank_objcenter[y1_bg:y2_bg, x1_bg:x2_bg] = obj
+        transform_matrix = np.float32([[1, 0, vx], [0, 1, vy]])
+        tempcp = imgblank_objcenter.copy()
+        imgblank_objtrans = cv2.warpAffine(
+            src=tempcp,
+            M=transform_matrix,
+            dsize=(imgsize, imgsize))
+        imgobjcenter = imgblank_objcenter + imgbg
+        imgobjtrans = imgblank_objtrans + imgbg
 
-    # paste object in center of blank img
-    imgblank = np.zeros([imgsize, imgsize, 3])
-    imgblank_objcenter = imgblank.copy()
-    imgblank_objcenter[y1_bg:y2_bg, x1_bg:x2_bg] = obj
-    transform_matrix = np.float32([[1, 0, vx], [0, 1, vy]])
-    tempcp = imgblank_objcenter.copy()
-    imgblank_objtrans = cv2.warpAffine(
-        src=tempcp,
-        M=transform_matrix,
-        dsize=(imgsize, imgsize))
-    imgobjcenter = imgblank_objcenter + imgbg
-    imgobjtrans = imgblank_objtrans + imgbg
-    # quit() # TODO ^
+        # save new images to results directory
+        path_center = os.path.join(resultsdir, str(i+istart) + 'c.jpg')
+        path_trans = os.path.join(resultsdir, str(i+istart) + 't.jpg')
+        cv2.imwrite(path_center, imgobjcenter)
+        cv2.imwrite(path_trans, imgobjtrans)
 
+        # append line in csv file
+        csv.write(path_center + ','
+                  + path_trans + ','
+                  + str(vx) + ','
+                  + str(vy) +'\n')
 
-    # save new images to results directory
-    path_center = os.path.join(resultsdir, str(i) + 'c.jpg')
-    path_trans = os.path.join(resultsdir, str(i) + 't.jpg')
-    cv2.imwrite(path_center, imgobjcenter)
-    cv2.imwrite(path_trans, imgobjtrans)
+        print(i + istart)
 
-    # append line in csv file
-    csv.write(path_center + ','
-              + path_trans + ','
-              + str(vx) + ','
-              + str(vy) +'\n')
+        # display images if display global is set
+        if display:
+            cv2.imshow('fg image', imgfg)
+            cv2.imshow('fg object', obj)
+            cv2.imshow('bg image: before', imgbg)
+            cv2.imshow('bg image: object in center', imgobjcenter)
+            cv2.imshow('bg image: object translated by v = <'
+                       + str(vx) + ', ' + str(vy) + '>', imgobjtrans)
+            while cv2.waitKey(0) != 32: # spacebar
+                pass
+            cv2.destroyAllWindows()
 
-    print(i)
+# make 10k images as normal
+make_10k_images(
+    fglist=fglist,
+    bglist=bglist,
+    istart=0)
 
-    # display images if display global is set
-    if display:
-        cv2.imshow('fg image', imgfg)
-        cv2.imshow('fg object', obj)
-        cv2.imshow('bg image: before', imgbg)
-        cv2.imshow('bg image: object in center', imgobjcenter)
-        cv2.imshow('bg image: object translated by v = <'
-                   + str(vx) + ', ' + str(vy) + '>', imgobjtrans)
-        while cv2.waitKey(0) != 32: # spacebar
-            pass
-        cv2.destroyAllWindows()
-    
+# make 10k more with bg and fg reversed
+make_10k_images(
+    fglist=bglist,
+    bglist=fglist,
+    istart=10000)
+
+# shuffle bglist and fglist and repeat
+random.shuffle(fglist)
+random.shuffle(bglist)
+
+make_10k_images(
+    fglist=fglist,
+    bglist=bglist,
+    istart=20000)
+
+make_10k_images(
+    fglist=bglist,
+    bglist=fglist,
+    istart=30000)
 
 
 

@@ -111,11 +111,13 @@ fullset = TwoFrameTrackingDataset(
     resultsdir=resultsdir,
     transform=None)
 
-n_train = 8000
-n_validation = 1000
-n_test = 1000
-if n_train + n_validation + n_test > 10000:
-    sys.exit('ERROR: size of train + validation + test sets must be <= 10,000'
+n_total = 40000
+n_train = 20000
+n_validation = 10000
+n_test = 10000
+if n_train + n_validation + n_test > n_total:
+    sys.exit('ERROR: size of train + validation + test sets must be <= '
+             + str(n_total)
              + ' (total size of the dataset).\nExiting...')
 
 trainset = torch.utils.data.Subset(
@@ -376,7 +378,7 @@ plt.savefig(os.path.join(reportdir, 'heatmap_regression.png'))
 
 # show error map
 plt.figure()
-plt.imshow(errmap, cmap='hot', interpolation='nearest')
+plt.imshow(errmap, interpolation='nearest')
 plt.xlabel('x-component of offset vector')
 plt.ylabel('y-component of offset vector')
 plt.title('Sum of |ex| + |ey| on all images in test set')
@@ -393,6 +395,17 @@ plt.xticks(range(65), ticks)
 plt.yticks(range(65), ticks)
 plt.colorbar()
 plt.savefig(os.path.join(reportdir, 'errmap_regression.png'))
+
+# show count map
+plt.figure()
+plt.imshow(count, interpolation='nearest')
+plt.xlabel('x-component of offset vector')
+plt.ylabel('y-component of offset vector')
+plt.title('# of times offset vector is seen in test data')
+plt.xticks(range(65), ticks)
+plt.yticks(range(65), ticks)
+plt.colorbar()
+plt.savefig(os.path.join(reportdir, 'cnt.png'))
 
 
 
