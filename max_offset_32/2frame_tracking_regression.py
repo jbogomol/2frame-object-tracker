@@ -91,7 +91,7 @@ class TwoFrameTrackingDataset(torch.utils.data.Dataset):
 
 
 # network hyperparameters
-n_epochs = 50
+n_epochs = 100
 batch_size_train = 64
 batch_size_validation = 1
 batch_size_test = 1
@@ -155,8 +155,8 @@ class Network(nn.Module):
         self.conv3 = nn.Conv2d(in_channels=32, out_channels=64,
                                kernel_size=3, stride=2)
         self.conv3_bn = nn.BatchNorm2d(num_features=64)
-        self.fc1 = nn.Linear(in_features=64*31*31, out_features=120)
-        self.out = nn.Linear(in_features=120, out_features=2)
+        self.fc1 = nn.Linear(in_features=64*31*31, out_features=256)
+        self.out = nn.Linear(in_features=256, out_features=2)
     
     def forward(self, t):
         # (1) convolutional layer
